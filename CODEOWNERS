@@ -1,0 +1,16 @@
+# Global owners
+* @team-lead
+
+# Backend specific
+/backend/ @backend-team @team-lead
+
+# Frontend specific  
+/frontend/ @frontend-team @team-lead
+
+# Infrastructure
+docker-compose*.yml @devops-team @team-lead
+Dockerfile @devops-team @team-lead
+
+# Documentation
+README.md @team-lead
+*.md @team-lead

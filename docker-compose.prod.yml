@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: artha-mongodb-prod
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: artha
+    networks:
+      - artha-network
+
+  backend:
+    build: ./backend
+    container_name: artha-backend-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/artha
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE: 7d
+      CORS_ORIGIN: ${FRONTEND_URL}
+    depends_on:
+      - mongodb
+    networks:
+      - artha-network
+
+  frontend:
+    build: ./frontend
+    container_name: artha-frontend-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - artha-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  artha-network:
+    driver: bridge
