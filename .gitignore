@@ -16,7 +16,7 @@ dist/
 build/
 
 # Logs
-logs
+logs/
 *.log
 
 # Runtime data
@@ -40,3 +40,6 @@ Thumbs.db
 
 # Docker
 .dockerignore
+
+# Husky
+.husky/

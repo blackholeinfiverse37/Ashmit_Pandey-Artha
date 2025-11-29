@@ -1,16 +1,5 @@
-# Global owners
-* @team-lead
-
-# Backend specific
-/backend/ @backend-team @team-lead
-
-# Frontend specific  
-/frontend/ @frontend-team @team-lead
-
-# Infrastructure
-docker-compose*.yml @devops-team @team-lead
-Dockerfile @devops-team @team-lead
-
-# Documentation
-README.md @team-lead
-*.md @team-lead
+# CODEOWNERS file - enforces review requirements
+* @bhavesh @cto @ashmit-pandey
+/backend/src/config/ @cto @security-lead
+/backend/src/middleware/security.js @security-lead
+/.env.example @cto

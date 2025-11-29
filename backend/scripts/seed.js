@@ -1,6 +1,7 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const User = require('../src/models/User');
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import User from '../src/models/User.js';
+import chartOfAccountsService from '../src/services/chartOfAccounts.service.js';
 
 const seedData = async () => {
   try {
@@ -14,18 +15,30 @@ const seedData = async () => {
     const users = [
       {
         name: 'Admin User',
-        email: 'admin@example.com',
-        password: 'admin123'
+        email: process.env.ADMIN_EMAIL || 'admin@artha.local',
+        password: process.env.ADMIN_PASSWORD || 'Admin@123456',
+        role: 'admin'
       },
       {
         name: 'Test User',
         email: 'user@example.com',
-        password: 'user123'
+        password: 'testuser123',
+        role: 'viewer'
+      },
+      {
+        name: 'Accountant User',
+        email: 'accountant@artha.local',
+        password: 'Accountant@123',
+        role: 'accountant'
       }
     ];
 
     await User.insertMany(users);
-    console.log('Sample data seeded successfully');
+    console.log('Users seeded successfully');
+
+    // Seed Chart of Accounts using service
+    const accountsResult = await chartOfAccountsService.seedDefaultAccounts();
+    console.log(accountsResult.message);
     
     process.exit(0);
   } catch (error) {

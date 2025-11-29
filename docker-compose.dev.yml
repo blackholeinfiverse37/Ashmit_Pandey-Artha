@@ -1,43 +1,42 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:7
-    container_name: artha-mongodb-dev
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    environment:
-      MONGO_INITDB_DATABASE: artha
-
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: artha-backend-dev
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "5000:5000"
     environment:
       NODE_ENV: development
-      MONGODB_URI: mongodb://mongodb:27017/artha
-      JWT_SECRET: dev-secret-key-change-in-production
-      JWT_EXPIRE: 7d
-      CORS_ORIGIN: http://localhost:5173
-    depends_on:
-      - mongodb
+    env_file:
+      - ./backend/.env
     volumes:
-      - ./backend/src:/app/src
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - artha-network
     command: npm run dev
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: artha-frontend-dev
     restart: unless-stopped
     ports:
-      - "5173:80"
-    depends_on:
-      - backend
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:5000/api/v1
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - artha-network
+    command: npm run dev
 
-volumes:
-  mongodb_data:
+networks:
+  artha-network:
+    driver: bridge
