@@ -107,11 +107,8 @@ class LedgerService {
         tags,
         status: 'draft',
         prev_hash: prevHash,
-        immutable_hash: '', // Will be calculated after save
+        immutable_hash: '', // Will be calculated in pre-save hook
       });
-
-      // Calculate hash
-      journalEntry.immutable_hash = journalEntry.calculateHash();
 
       await journalEntry.save({ session });
 
@@ -161,9 +158,7 @@ class LedgerService {
       entry.postedBy = userId;
       entry.postedAt = new Date();
       
-      // Recalculate hash with posted status
-      entry.immutable_hash = entry.calculateHash();
-      
+      // Hash will be recalculated in pre-save hook
       await entry.save({ session });
 
       // Update account balances
@@ -526,9 +521,9 @@ class LedgerService {
         postedBy: userId,
         postedAt: new Date(),
         prev_hash: await this.getPreviousHash(),
+        immutable_hash: '', // Will be calculated in pre-save hook
       });
 
-      reversingEntry.immutable_hash = reversingEntry.calculateHash();
       await reversingEntry.save({ session });
 
       // Update account balances with reversing entry

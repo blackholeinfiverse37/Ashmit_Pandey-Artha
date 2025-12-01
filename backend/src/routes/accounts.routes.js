@@ -36,6 +36,15 @@ router
     createAccount
   );
 
+// Seed route must come before /:id to avoid conflicts
+router
+  .route('/seed')
+  .post(
+    authorize('admin'),
+    auditLogger('accounts.seed', 'ChartOfAccounts'),
+    seedAccounts
+  );
+
 router
   .route('/:id')
   .get(getAccount)
@@ -50,14 +59,6 @@ router
     authorize('admin'),
     auditLogger('account.deactivate', 'ChartOfAccounts'),
     deactivateAccount
-  );
-
-router
-  .route('/seed')
-  .post(
-    authorize('admin'),
-    auditLogger('accounts.seed', 'ChartOfAccounts'),
-    seedAccounts
   );
 
 

@@ -3,6 +3,7 @@ import authRoutes from './auth.js';
 import authRoutesV1 from './auth.routes.js';
 import ledgerRoutes from './ledger.routes.js';
 import accountsRoutes from './accounts.routes.js';
+import reportsRoutes from './reports.routes.js';
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use('/auth', authRoutes);
 router.use('/v1/auth', authRoutesV1);
 router.use('/v1/ledger', ledgerRoutes);
 router.use('/v1/accounts', accountsRoutes);
+router.use('/v1/reports', reportsRoutes);
 
 export default router;

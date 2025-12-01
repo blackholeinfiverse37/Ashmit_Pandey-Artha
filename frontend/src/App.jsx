@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Ledger from './pages/Ledger';
 import { authService } from './services/authService';
 
 function PrivateRoute({ children }) {
@@ -17,6 +18,14 @@ function App() {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ledger"
+          element={
+            <PrivateRoute>
+              <Ledger />
             </PrivateRoute>
           }
         />

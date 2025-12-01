@@ -22,7 +22,6 @@ const journalLineSchema = new mongoose.Schema({
 const journalEntrySchema = new mongoose.Schema({
   entryNumber: {
     type: String,
-    required: true,
     unique: true,
     // Format: JE-YYYYMMDD-XXXX
   },
@@ -62,7 +61,6 @@ const journalEntrySchema = new mongoose.Schema({
   // Audit chain fields
   immutable_hash: {
     type: String,
-    required: true,
   },
   prev_hash: {
     type: String,
@@ -76,7 +74,7 @@ const journalEntrySchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Generate entry number
+// Generate entry number and hash
 journalEntrySchema.pre('save', async function(next) {
   if (this.isNew && !this.entryNumber) {
     const date = new Date();
@@ -86,20 +84,27 @@ journalEntrySchema.pre('save', async function(next) {
     });
     this.entryNumber = `JE-${dateStr}-${String(count + 1).padStart(4, '0')}`;
   }
+  
+  // Calculate hash after entryNumber is set
+  if (this.isNew || this.isModified('status')) {
+    this.immutable_hash = this.calculateHash();
+  }
+  
   next();
 });
 
 // Calculate immutable hash
 journalEntrySchema.methods.calculateHash = function() {
   const payload = {
-    entryNumber: this.entryNumber,
+    entryNumber: this.entryNumber || 'TEMP',
     date: this.date.toISOString(),
     description: this.description,
     lines: this.lines,
     prev_hash: this.prev_hash,
+    status: this.status,
   };
   
-  const hmac = crypto.createHmac('sha256', process.env.HMAC_SECRET);
+  const hmac = crypto.createHmac('sha256', process.env.HMAC_SECRET || 'default-secret');
   hmac.update(JSON.stringify(payload));
   return hmac.digest('hex');
 };
