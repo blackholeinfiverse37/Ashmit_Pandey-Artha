@@ -1,0 +1,118 @@
+import mongoose from 'mongoose';
+
+const receiptSchema = new mongoose.Schema({
+  filename: {
+    type: String,
+    required: true,
+  },
+  path: {
+    type: String,
+    required: true,
+  },
+  mimetype: {
+    type: String,
+    required: true,
+  },
+  size: {
+    type: Number,
+    required: true,
+  },
+  uploadedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const expenseSchema = new mongoose.Schema({
+  expenseNumber: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  date: {
+    type: Date,
+    required: true,
+    default: Date.now,
+  },
+  vendor: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: [
+      'travel',
+      'meals',
+      'supplies',
+      'utilities',
+      'rent',
+      'insurance',
+      'marketing',
+      'professional_services',
+      'equipment',
+      'software',
+      'other',
+    ],
+  },
+  amount: {
+    type: String,
+    required: true,
+  },
+  taxAmount: {
+    type: String,
+    default: '0',
+  },
+  totalAmount: {
+    type: String,
+    required: true,
+  },
+  paymentMethod: {
+    type: String,
+    required: true,
+    enum: ['cash', 'credit_card', 'debit_card', 'check', 'bank_transfer', 'other'],
+  },
+  receipts: [receiptSchema],
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'recorded'],
+    default: 'pending',
+  },
+  account: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ChartOfAccounts',
+  },
+  journalEntryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'JournalEntry',
+  },
+  submittedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  approvedAt: Date,
+  rejectionReason: String,
+  notes: String,
+}, {
+  timestamps: true,
+});
+
+// Auto-generate expense number
+expenseSchema.pre('save', async function(next) {
+  if (this.isNew && !this.expenseNumber) {
+    const count = await mongoose.model('Expense').countDocuments();
+    this.expenseNumber = `EXP-${String(count + 1).padStart(6, '0')}`;
+  }
+  next();
+});
+
+export default mongoose.model('Expense', expenseSchema);

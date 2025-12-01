@@ -87,6 +87,19 @@ docker-compose -f docker-compose.prod.yml up --build
 - `POST /api/v1/ledger/journal-entries/:id/void` - Void journal entry (legacy)
 - `GET /api/v1/ledger/verify-chain` - Verify ledger integrity (legacy)
 
+### Reports
+- `GET /api/v1/reports/general-ledger` - Export General Ledger as PDF (admin/accountant)
+
+### Invoices
+- `GET /api/v1/invoices` - Get all invoices with filters (admin/accountant/manager)
+- `GET /api/v1/invoices/stats` - Get invoice statistics (admin/accountant/manager)
+- `GET /api/v1/invoices/:id` - Get single invoice (admin/accountant/manager)
+- `POST /api/v1/invoices` - Create new invoice (admin/accountant)
+- `PUT /api/v1/invoices/:id` - Update invoice (admin/accountant)
+- `POST /api/v1/invoices/:id/send` - Send invoice and create AR entry (admin/accountant)
+- `POST /api/v1/invoices/:id/payment` - Record payment for invoice (admin/accountant)
+- `POST /api/v1/invoices/:id/cancel` - Cancel invoice (admin/accountant)
+
 ### Health Check
 - `GET /health` - Main API health status
 - `GET /api/health` - Legacy health status

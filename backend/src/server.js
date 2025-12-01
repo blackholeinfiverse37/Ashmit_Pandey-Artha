@@ -12,6 +12,10 @@ import {
 
 // Routes
 import authRoutes from './routes/auth.routes.js';
+import ledgerRoutes from './routes/ledger.routes.js';
+import accountsRoutes from './routes/accounts.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
 import legacyRoutes from './routes/index.js';
 
 // Load env vars
@@ -49,9 +53,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mount routes
+// Mount routes - V1 API (Primary)
 app.use('/api/v1/auth', authRoutes);
-app.use('/api', legacyRoutes); // Maintain backward compatibility
+app.use('/api/v1/ledger', ledgerRoutes);
+app.use('/api/v1/accounts', accountsRoutes);
+app.use('/api/v1/reports', reportsRoutes);
+app.use('/api/v1/invoices', invoiceRoutes);
+
+// Legacy routes (Backward compatibility)
+app.use('/api', legacyRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -72,16 +82,23 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// Start server (only if not in test mode)
+let server;
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5000;
+  server = app.listen(PORT, () => {
+    logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Rejection:', err);
-  server.close(() => process.exit(1));
+  if (server) {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
 });
 
 // Handle uncaught exceptions
@@ -93,18 +110,26 @@ process.on('uncaughtException', (err) => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Process terminated');
+  if (server) {
+    server.close(() => {
+      logger.info('Process terminated');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Process terminated');
+  if (server) {
+    server.close(() => {
+      logger.info('Process terminated');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 export default app;
