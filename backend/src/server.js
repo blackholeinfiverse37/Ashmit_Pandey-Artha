@@ -16,6 +16,11 @@ import ledgerRoutes from './routes/ledger.routes.js';
 import accountsRoutes from './routes/accounts.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
+import expenseRoutes from './routes/expense.routes.js';
+import insightflowRoutes from './routes/insightflow.routes.js';
+import gstRoutes from './routes/gst.routes.js';
+import tdsRoutes from './routes/tds.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
 import legacyRoutes from './routes/index.js';
 
 // Load env vars
@@ -43,6 +48,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Sanitize inputs
 app.use(sanitizeInput);
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
@@ -59,6 +67,11 @@ app.use('/api/v1/ledger', ledgerRoutes);
 app.use('/api/v1/accounts', accountsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/invoices', invoiceRoutes);
+app.use('/api/v1/expenses', expenseRoutes);
+app.use('/api/v1/insightflow', insightflowRoutes);
+app.use('/api/v1/gst', gstRoutes);
+app.use('/api/v1/tds', tdsRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 // Legacy routes (Backward compatibility)
 app.use('/api', legacyRoutes);

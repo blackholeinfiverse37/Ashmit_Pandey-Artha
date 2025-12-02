@@ -2,10 +2,18 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Ledger from './pages/Ledger';
+import Invoices from './pages/Invoices';
+import Expenses from './pages/Expenses';
+import Reports from './pages/Reports';
+import Layout from './components/Layout';
 import { authService } from './services/authService';
 
 function PrivateRoute({ children }) {
-  return authService.isAuthenticated() ? children : <Navigate to="/login" />;
+  return authService.isAuthenticated() ? (
+    <Layout>{children}</Layout>
+  ) : (
+    <Navigate to="/login" />
+  );
 }
 
 function App() {
@@ -26,6 +34,30 @@ function App() {
           element={
             <PrivateRoute>
               <Ledger />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <PrivateRoute>
+              <Invoices />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/expenses"
+          element={
+            <PrivateRoute>
+              <Expenses />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <PrivateRoute>
+              <Reports />
             </PrivateRoute>
           }
         />

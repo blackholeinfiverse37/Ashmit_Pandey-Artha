@@ -1,8 +1,15 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import User from '../src/models/User.js';
+import Invoice from '../src/models/Invoice.js';
+import Expense from '../src/models/Expense.js';
+import GSTReturn from '../src/models/GSTReturn.js';
+import TDSEntry from '../src/models/TDSEntry.js';
+import CompanySettings from '../src/models/CompanySettings.js';
 import chartOfAccountsService from '../src/services/chartOfAccounts.service.js';
 import ledgerService from '../src/services/ledger.service.js';
+import invoiceService from '../src/services/invoice.service.js';
+import expenseService from '../src/services/expense.service.js';
 import logger from '../src/config/logger.js';
 
 dotenv.config();
@@ -146,6 +153,140 @@ const seedDatabase = async () => {
     await ledgerService.postJournalEntry(entry4._id, accountant._id);
     logger.info('Sample entry 4 created and posted');
 
+    // Create sample invoice
+    const sampleInvoice = await Invoice.create({
+      invoiceNumber: 'INV-2025-001',
+      invoiceDate: new Date('2025-01-20'),
+      dueDate: new Date('2025-02-20'),
+      customerName: 'Acme Corporation',
+      customerEmail: 'billing@acme.com',
+      customerAddress: {
+        street: '123 Business Park',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        zipCode: '400001',
+        country: 'India',
+      },
+      items: [
+        {
+          description: 'Consulting Services - January 2025',
+          quantity: 40,
+          unitPrice: '2000.00',
+          amount: '80000.00',
+        },
+        {
+          description: 'Software License',
+          quantity: 1,
+          unitPrice: '10000.00',
+          amount: '10000.00',
+        },
+      ],
+      subtotal: '90000.00',
+      taxRate: 18,
+      taxAmount: '16200.00',
+      totalAmount: '106200.00',
+      notes: 'Payment terms: Net 30 days',
+      createdBy: accountant._id,
+    });
+
+    // Send the invoice (creates AR entry)
+    await invoiceService.sendInvoice(sampleInvoice._id, accountant._id);
+    logger.info('Sample invoice created and sent');
+
+    // Create sample expense
+    const officeSupplies = await ChartOfAccounts.findOne({ code: '6300' });
+    const sampleExpense = await Expense.create({
+      date: new Date('2025-01-25'),
+      category: 'supplies',
+      vendor: 'Office Depot',
+      description: 'Office supplies and stationery',
+      amount: '5000.00',
+      taxAmount: '900.00',
+      totalAmount: '5900.00',
+      paymentMethod: 'credit_card',
+      status: 'approved',
+      submittedBy: accountant._id,
+      approvedBy: admin._id,
+      approvedAt: new Date(),
+      account: officeSupplies._id,
+      notes: 'Monthly office supplies purchase',
+    });
+
+    // Record expense in ledger
+    await expenseService.recordExpense(sampleExpense._id, admin._id);
+    logger.info('Sample expense created and recorded');
+
+    // Create company settings for India compliance
+    await CompanySettings.create({
+      companyName: 'Artha Accounting Pvt Ltd',
+      legalName: 'Artha Accounting Private Limited',
+      address: {
+        street: '123 Business Park, Sector 5',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400001',
+        country: 'India'
+      },
+      phone: '+91-22-12345678',
+      email: 'info@artha.local',
+      gstin: '27AABCU9603R1ZX',
+      pan: 'AABCU9603R',
+      tan: 'MUMA12345E',
+      gstSettings: {
+        isRegistered: true,
+        filingFrequency: 'monthly',
+        compositionScheme: false
+      },
+      tdsSettings: {
+        isTANActive: true,
+        defaultTDSRate: 10,
+        autoCalculateTDS: true
+      }
+    });
+    logger.info('Company settings created');
+
+    // Create sample GST return
+    const sampleGSTReturn = await GSTReturn.create({
+      returnType: 'GSTR1',
+      period: { month: 12, year: 2024 },
+      gstin: '27AABCU9603R1ZX',
+      b2b: [{
+        customerGSTIN: '29AABCU9603R1ZY',
+        customerName: 'Acme Corporation',
+        invoiceNumber: 'INV-2025-001',
+        invoiceDate: new Date('2025-01-20'),
+        invoiceValue: '106200.00',
+        taxableValue: '90000.00',
+        cgst: '8100.00',
+        sgst: '8100.00',
+        igst: '0.00'
+      }],
+      status: 'draft',
+      filedBy: accountant._id
+    });
+    logger.info('Sample GST return created');
+
+    // Create sample TDS entry
+    const sampleTDSEntry = await TDSEntry.create({
+      transactionDate: new Date('2025-01-25'),
+      deductee: {
+        name: 'Professional Consultant',
+        pan: 'ABCDE1234F',
+        address: '456 Consultant Street, Mumbai'
+      },
+      section: '194J',
+      nature: 'Professional Fees',
+      paymentAmount: '50000.00',
+      tdsRate: 10,
+      tdsAmount: '5000.00',
+      status: 'deducted',
+      quarter: 'Q4',
+      financialYear: '2024-25',
+      createdBy: accountant._id,
+      notes: 'Consulting services for system implementation'
+    });
+    logger.info('Sample TDS entry created');
+
     // Verify ledger chain
     const verification = await ledgerService.verifyLedgerChain();
     logger.info('Ledger chain verification:', verification);
@@ -159,6 +300,12 @@ const seedDatabase = async () => {
     logger.info('Admin: admin@artha.local / Admin@123456');
     logger.info('Accountant: accountant@artha.local / Accountant@123');
     logger.info('Viewer: user@example.com / testuser123');
+    logger.info('\nIndia Compliance Data:');
+    logger.info('Company GSTIN: 27AABCU9603R1ZX');
+    logger.info('Company PAN: AABCU9603R');
+    logger.info('Company TAN: MUMA12345E');
+    logger.info('Sample GST Return: GSTR1 for Dec 2024');
+    logger.info('Sample TDS Entry: Professional fees with 10% TDS');
     
     process.exit(0);
   } catch (error) {

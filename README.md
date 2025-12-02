@@ -10,6 +10,11 @@ A full-stack web application with Node.js backend and React frontend.
 - React frontend with modern UI
 - Docker containerization
 - MongoDB database
+- File upload system for receipts
+- Expense management with approval workflow
+- Invoice management with payment tracking
+- InsightFlow RL experience buffer for analytics
+- Comprehensive audit logging and telemetry
 
 ## Quick Start
 
@@ -34,6 +39,11 @@ Alternatively, manual setup:
 2. Start with Docker Compose:
    ```bash
    docker-compose -f docker-compose.dev.yml up --build
+   ```
+3. Seed the database with sample data:
+   ```bash
+   cd backend
+   npm run seed
    ```
 
 The application will be available at:
@@ -100,6 +110,22 @@ docker-compose -f docker-compose.prod.yml up --build
 - `POST /api/v1/invoices/:id/payment` - Record payment for invoice (admin/accountant)
 - `POST /api/v1/invoices/:id/cancel` - Cancel invoice (admin/accountant)
 
+### Expenses
+- `GET /api/v1/expenses` - Get all expenses with filters (admin/accountant/manager)
+- `GET /api/v1/expenses/stats` - Get expense statistics (admin/accountant/manager)
+- `GET /api/v1/expenses/:id` - Get single expense (admin/accountant/manager/owner)
+- `POST /api/v1/expenses` - Create new expense with receipt uploads (all users)
+- `PUT /api/v1/expenses/:id` - Update expense with additional receipts (admin/accountant/owner)
+- `POST /api/v1/expenses/:id/approve` - Approve expense (admin/accountant)
+- `POST /api/v1/expenses/:id/reject` - Reject expense (admin/accountant)
+- `POST /api/v1/expenses/:id/record` - Record expense in ledger (admin/accountant)
+- `DELETE /api/v1/expenses/:id/receipts/:receiptId` - Delete receipt (admin/accountant/owner)
+
+### InsightFlow (RL Experience Buffer)
+- `POST /api/v1/insightflow/experience` - Log RL experience data (all authenticated users)
+- `GET /api/v1/insightflow/experiences` - Get RL experiences with filters (admin)
+- `GET /api/v1/insightflow/stats` - Get RL experience statistics (admin)
+
 ### Health Check
 - `GET /health` - Main API health status
 - `GET /api/health` - Legacy health status
@@ -132,7 +158,8 @@ docker-compose -f docker-compose.prod.yml up --build
 ```bash
 cd backend
 npm install
-npm run dev
+npm run seed    # Seed database with sample data
+npm run dev     # Start development server
 ```
 
 ### Frontend
@@ -140,6 +167,39 @@ npm run dev
 cd frontend
 npm install
 npm run dev
+```
+
+## Sample Data
+
+The seed script creates:
+- **Users**: Admin, Accountant, and Viewer accounts
+- **Chart of Accounts**: Complete accounting structure
+- **Journal Entries**: Sample transactions (capital, sales, expenses)
+- **Sample Invoice**: Acme Corporation invoice with AR integration
+- **Sample Expense**: Office supplies expense with ledger recording
+
+### Login Credentials
+- **Admin**: admin@artha.local / Admin@123456
+- **Accountant**: accountant@artha.local / Accountant@123
+- **Viewer**: user@example.com / testuser123
+
+## Scripts
+
+```bash
+# Database operations
+npm run seed              # Seed database with sample data
+npm run verify:seed       # Verify seed data integrity
+npm run demo             # Run workflow demonstration
+
+# Testing
+npm run test             # Run all tests with coverage
+npm run test:seed        # Test seed script functionality
+npm run test:final       # Run final integration tests
+
+# Verification
+npm run verify:server    # Verify server configuration
+npm run verify:controllers # Verify controller implementation
+npm run verify:insightflow # Verify InsightFlow system
 ```
 
 ## Environment Variables

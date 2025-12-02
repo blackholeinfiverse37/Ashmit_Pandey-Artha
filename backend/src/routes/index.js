@@ -4,6 +4,8 @@ import authRoutesV1 from './auth.routes.js';
 import ledgerRoutes from './ledger.routes.js';
 import accountsRoutes from './accounts.routes.js';
 import reportsRoutes from './reports.routes.js';
+import expenseRoutes from './expense.routes.js';
+import insightflowRoutes from './insightflow.routes.js';
 
 const router = express.Router();
 
@@ -27,5 +29,7 @@ router.use('/v1/auth', authRoutesV1);
 router.use('/v1/ledger', ledgerRoutes);
 router.use('/v1/accounts', accountsRoutes);
 router.use('/v1/reports', reportsRoutes);
+router.use('/v1/expenses', expenseRoutes);
+router.use('/v1/insightflow', insightflowRoutes);
 
 export default router;
