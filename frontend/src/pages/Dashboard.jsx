@@ -25,77 +25,59 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    authService.logout();
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-r-indigo-600 animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+          </div>
+          <p className="mt-6 text-gray-600 font-medium">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500 mt-2">Fetching latest financial data</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">ARTHA Finance</h1>
-              <div className="hidden md:ml-10 md:flex md:space-x-8">
-                <a
-                  href="/dashboard"
-                  className="border-primary-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Dashboard
-                </a>
-                <a
-                  href="/ledger"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Ledger
-                </a>
-                <a
-                  href="/invoices"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Invoices
-                </a>
-                <a
-                  href="/expenses"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Expenses
-                </a>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Welcome back, {user?.name}! 👋
+              </h1>
+              <p className="text-blue-100 text-lg">
+                Here's your financial overview for today
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {user?.name} ({user?.role})
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-              >
-                Logout
-              </button>
+            <div className="hidden md:block">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                <div className="text-white text-right">
+                  <p className="text-sm opacity-90">Today's Date</p>
+                  <p className="text-lg font-semibold">{new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8 -mt-4 relative z-10">
         {summary && (
           <div>
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-4 sm:px-0">
               <KPICard
                 title="Total Assets"
                 value={formatCurrency(summary.balanceSheet.assets)}
@@ -123,7 +105,7 @@ export default function Dashboard() {
             </div>
 
             {/* Balance Sheet Summary */}
-            <div className="bg-white shadow rounded-lg p-6 mb-8">
+            <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 mb-8 border border-white/20 mx-4 sm:mx-0">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Balance Sheet Summary
               </h2>
@@ -183,7 +165,7 @@ export default function Dashboard() {
             </div>
 
             {/* Invoice Summary */}
-            <div className="bg-white shadow rounded-lg p-6 mb-8">
+            <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 mb-8 border border-white/20 mx-4 sm:mx-0">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(summary.invoices).map(([status, data]) => (
@@ -200,7 +182,7 @@ export default function Dashboard() {
 
             {/* Top Expenses by Category */}
             {summary.expenses && summary.expenses.length > 0 && (
-              <div className="bg-white shadow rounded-lg p-6 mb-8">
+              <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 mb-8 border border-white/20 mx-4 sm:mx-0">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Top Expenses (Current Month)
                 </h2>
@@ -223,7 +205,7 @@ export default function Dashboard() {
             )}
 
             {/* Recent Journal Entries */}
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20 mx-4 sm:mx-0">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Recent Journal Entries
               </h2>
@@ -275,18 +257,36 @@ export default function Dashboard() {
 
 function KPICard({ title, value, icon, color }) {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-700',
-    green: 'bg-green-50 text-green-700',
-    red: 'bg-red-50 text-red-700',
+    blue: 'from-blue-500 to-blue-600 text-white',
+    green: 'from-green-500 to-green-600 text-white',
+    red: 'from-red-500 to-red-600 text-white',
+  };
+
+  const bgClasses = {
+    blue: 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200',
+    green: 'bg-gradient-to-br from-green-50 to-green-100 border-green-200',
+    red: 'bg-gradient-to-br from-red-50 to-red-100 border-red-200',
   };
 
   return (
-    <div className={`rounded-lg p-6 ${colorClasses[color]}`}>
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium">{title}</p>
-        <span className="text-2xl">{icon}</span>
+    <div className={`relative overflow-hidden rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 ${bgClasses[color]}`}>
+      <div className="absolute top-0 right-0 -mt-4 -mr-4 h-16 w-16 rounded-full bg-white/20 blur-xl"></div>
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`p-3 rounded-xl bg-gradient-to-r ${colorClasses[color]} shadow-lg`}>
+            <span className="text-2xl">{icon}</span>
+          </div>
+          <div className="text-right">
+            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">{title}</p>
+          <p className="text-3xl font-bold text-gray-900">{value}</p>
+        </div>
       </div>
-      <p className="text-3xl font-bold">{value}</p>
     </div>
   );
 }

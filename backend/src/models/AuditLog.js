@@ -38,10 +38,14 @@ const auditLogSchema = new mongoose.Schema({
   timestamps: false, // Use custom timestamp field
 });
 
-// Indexes for querying
+// Additional indexes for performance
 auditLogSchema.index({ entityType: 1, entityId: 1 });
 auditLogSchema.index({ userId: 1 });
 auditLogSchema.index({ timestamp: -1 });
+auditLogSchema.index({ action: 1 });
+auditLogSchema.index({ entityType: 1, timestamp: -1 });
+auditLogSchema.index({ userId: 1, timestamp: -1 });
+auditLogSchema.index({ ipAddress: 1 });
 
 // Make immutable
 auditLogSchema.pre('save', function(next) {

@@ -4,6 +4,7 @@ import Invoice from '../models/Invoice.js';
 import ledgerService from './ledger.service.js';
 import ChartOfAccounts from '../models/ChartOfAccounts.js';
 import logger from '../config/logger.js';
+import cacheService from './cache.service.js';
 
 class InvoiceService {
   /**
@@ -212,6 +213,10 @@ class InvoiceService {
       
       await session.commitTransaction();
       
+      // Invalidate related caches
+      await cacheService.invalidateInvoiceCaches();
+      await cacheService.invalidateLedgerCaches();
+      
       logger.info(`Payment recorded for invoice: ${invoice.invoiceNumber}`);
       
       return invoice;
@@ -322,6 +327,12 @@ class InvoiceService {
    * Get invoice statistics
    */
   async getInvoiceStats(dateFrom, dateTo) {
+    // Try to get from cache first
+    const cached = await cacheService.getCachedInvoiceStats(dateFrom, dateTo);
+    if (cached) {
+      return cached;
+    }
+
     const match = {};
     
     if (dateFrom || dateTo) {
@@ -367,6 +378,9 @@ class InvoiceService {
       count: totalCount,
       amount: totalAmount.toString(),
     };
+    
+    // Cache the result
+    await cacheService.cacheInvoiceStats(dateFrom, dateTo, summary);
     
     return summary;
   }

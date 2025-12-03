@@ -14,6 +14,7 @@ import {
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, auditLogger } from '../middleware/security.js';
 import { uploadReceipts, handleUploadError } from '../middleware/upload.js';
+import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -46,11 +47,11 @@ const expenseValidation = [
 router.use(protect);
 
 // Routes
-router.route('/stats').get(getExpenseStats);
+router.route('/stats').get(cacheMiddleware(900), getExpenseStats);
 
 router
   .route('/')
-  .get(getExpenses)
+  .get(cacheMiddleware(300), getExpenses)
   .post(
     uploadReceipts.array('receipts', 5),
     handleUploadError,
@@ -62,7 +63,7 @@ router
 
 router
   .route('/:id')
-  .get(getExpense)
+  .get(cacheMiddleware(600), getExpense)
   .put(
     uploadReceipts.array('receipts', 5),
     handleUploadError,

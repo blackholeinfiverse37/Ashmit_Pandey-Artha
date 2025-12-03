@@ -123,4 +123,11 @@ const companySettingsSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Additional indexes for performance
+companySettingsSchema.index({ gstin: 1 });
+companySettingsSchema.index({ pan: 1 });
+companySettingsSchema.index({ tan: 1 });
+companySettingsSchema.index({ 'gstSettings.isRegistered': 1 });
+companySettingsSchema.index({ 'tdsSettings.isTANActive': 1 });
+
 export default mongoose.model('CompanySettings', companySettingsSchema);

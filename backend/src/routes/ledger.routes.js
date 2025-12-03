@@ -12,6 +12,7 @@ import {
 } from '../controllers/ledger.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, auditLogger } from '../middleware/security.js';
+import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ router.use(protect);
 // Routes
 router
   .route('/entries')
-  .get(getEntries)
+  .get(cacheMiddleware(300), getEntries)
   .post(
     authorize('accountant', 'admin'),
     createEntryValidation,
@@ -65,9 +66,9 @@ router
     voidEntry
   );
 
-router.route('/balances').get(getBalances);
+router.route('/balances').get(cacheMiddleware(600), getBalances);
 
-router.route('/summary').get(getSummary);
+router.route('/summary').get(cacheMiddleware(300), getSummary);
 
 router.route('/verify').get(authorize('admin'), verifyChain);
 

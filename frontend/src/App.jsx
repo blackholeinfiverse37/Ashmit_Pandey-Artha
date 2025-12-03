@@ -5,6 +5,7 @@ import Ledger from './pages/Ledger';
 import Invoices from './pages/Invoices';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
+import SystemHealth from './pages/SystemHealth';
 import Layout from './components/Layout';
 import { authService } from './services/authService';
 
@@ -58,6 +59,14 @@ function App() {
           element={
             <PrivateRoute>
               <Reports />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/system"
+          element={
+            <PrivateRoute>
+              <SystemHealth />
             </PrivateRoute>
           }
         />

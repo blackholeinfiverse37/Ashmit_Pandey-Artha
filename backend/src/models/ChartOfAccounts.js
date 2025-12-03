@@ -42,6 +42,13 @@ const chartOfAccountsSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Additional indexes for performance
+chartOfAccountsSchema.index({ code: 1 }); // Already unique, but explicit
+chartOfAccountsSchema.index({ type: 1 });
+chartOfAccountsSchema.index({ isActive: 1 });
+chartOfAccountsSchema.index({ type: 1, isActive: 1 });
+chartOfAccountsSchema.index({ parentAccount: 1 });
+
 // Validation: Ensure normalBalance matches type
 chartOfAccountsSchema.pre('save', function(next) {
   const debitTypes = ['Asset', 'Expense'];

@@ -6,6 +6,7 @@ import ChartOfAccounts from '../models/ChartOfAccounts.js';
 import logger from '../config/logger.js';
 import fs from 'fs/promises';
 import path from 'path';
+import cacheService from './cache.service.js';
 
 class ExpenseService {
   /**
@@ -297,6 +298,10 @@ class ExpenseService {
       
       await session.commitTransaction();
       
+      // Invalidate related caches
+      await cacheService.invalidateExpenseCaches();
+      await cacheService.invalidateLedgerCaches();
+      
       logger.info(`Expense recorded: ${expense.expenseNumber}`);
       
       return expense;
@@ -345,6 +350,12 @@ class ExpenseService {
    * Get expense statistics
    */
   async getExpenseStats(dateFrom, dateTo) {
+    // Try to get from cache first
+    const cached = await cacheService.getCachedExpenseStats(dateFrom, dateTo);
+    if (cached) {
+      return cached;
+    }
+
     const match = {};
     
     if (dateFrom || dateTo) {
@@ -376,10 +387,15 @@ class ExpenseService {
       ]),
     ]);
     
-    return {
+    const result = {
       byStatus: statusStats,
       byCategory: categoryStats,
     };
+    
+    // Cache the result
+    await cacheService.cacheExpenseStats(dateFrom, dateTo, result);
+    
+    return result;
   }
 }
 

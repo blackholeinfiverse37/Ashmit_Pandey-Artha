@@ -159,6 +159,18 @@ const invoiceSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Additional indexes for performance
+invoiceSchema.index({ invoiceNumber: 1 }); // Already unique, but explicit
+invoiceSchema.index({ status: 1 });
+invoiceSchema.index({ invoiceDate: -1 });
+invoiceSchema.index({ dueDate: 1 });
+invoiceSchema.index({ status: 1, dueDate: 1 });
+invoiceSchema.index({ customerName: 1 });
+invoiceSchema.index({ customerName: 1, invoiceDate: -1 });
+invoiceSchema.index({ customerEmail: 1 });
+invoiceSchema.index({ createdBy: 1 });
+invoiceSchema.index({ customerGSTIN: 1 });
+
 // Virtual for amount due
 invoiceSchema.virtual('amountDue').get(function() {
   const total = parseFloat(this.totalAmount) || 0;

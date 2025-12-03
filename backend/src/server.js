@@ -2,13 +2,22 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/database.js';
+import { connectRedis } from './config/redis.js';
 import logger from './config/logger.js';
+import healthService from './services/health.service.js';
+import { validateEnvironment } from './config/validation.js';
 import {
   helmetConfig,
   limiter,
   sanitizeInput,
   watermark,
 } from './middleware/security.js';
+import {
+  requestLogger,
+  performanceMonitor,
+  errorTracker,
+} from './middleware/monitoring.js';
+import { memoryMonitor } from './middleware/performance.js';
 
 // Routes
 import authRoutes from './routes/auth.routes.js';
@@ -21,13 +30,30 @@ import insightflowRoutes from './routes/insightflow.routes.js';
 import gstRoutes from './routes/gst.routes.js';
 import tdsRoutes from './routes/tds.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import performanceRoutes from './routes/performance.routes.js';
+import databaseRoutes from './routes/database.routes.js';
+import healthRoutes from './routes/health.routes.js';
 import legacyRoutes from './routes/index.js';
 
 // Load env vars
 dotenv.config();
 
+// Validate environment configuration
+if (process.env.NODE_ENV === 'production') {
+  validateEnvironment();
+}
+
 // Connect to database
 connectDB();
+
+// Connect to Redis (optional)
+if (process.env.NODE_ENV === 'production') {
+  connectRedis().catch(err => {
+    logger.error('Redis connection failed:', err);
+  });
+} else {
+  connectRedis();
+}
 
 // Initialize express
 const app = express();
@@ -37,9 +63,20 @@ app.use(helmetConfig);
 app.use(cors({
   origin: process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(limiter);
 app.use(watermark);
+
+// Monitoring middleware (only in production)
+if (process.env.NODE_ENV === 'production') {
+  app.use(requestLogger);
+  app.use(performanceMonitor);
+  
+  // Start memory monitoring
+  memoryMonitor();
+}
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));
@@ -51,14 +88,29 @@ app.use(sanitizeInput);
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'ARTHA API is running',
-    timestamp: new Date().toISOString(),
-    version: '0.1.0',
-  });
+// Mount health routes (before other routes for priority)
+app.use('/', healthRoutes);
+
+// Enhanced health check (now handled by health routes)
+// Legacy health endpoint for backward compatibility
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = await healthService.getSystemHealth();
+    const statusCode = health.status === 'healthy' ? 200 : 503;
+    
+    res.status(statusCode).json({
+      success: health.status === 'healthy',
+      message: `ARTHA API is ${health.status}`,
+      data: health,
+    });
+  } catch (error) {
+    logger.error('Health check error:', error);
+    res.status(503).json({
+      success: false,
+      message: 'Health check failed',
+      error: error.message,
+    });
+  }
 });
 
 // Mount routes - V1 API (Primary)
@@ -72,6 +124,8 @@ app.use('/api/v1/insightflow', insightflowRoutes);
 app.use('/api/v1/gst', gstRoutes);
 app.use('/api/v1/tds', tdsRoutes);
 app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/performance', performanceRoutes);
+app.use('/api/v1/database', databaseRoutes);
 
 // Legacy routes (Backward compatibility)
 app.use('/api', legacyRoutes);
@@ -83,6 +137,9 @@ app.use((req, res) => {
     message: 'Route not found',
   });
 });
+
+// Error tracking middleware
+app.use(errorTracker);
 
 // Global error handler
 app.use((err, req, res, next) => {

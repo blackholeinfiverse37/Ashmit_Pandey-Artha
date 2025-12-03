@@ -74,6 +74,17 @@ const journalEntrySchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Additional indexes for performance
+journalEntrySchema.index({ entryNumber: 1 }); // Already unique, but explicit
+journalEntrySchema.index({ status: 1 });
+journalEntrySchema.index({ date: -1 });
+journalEntrySchema.index({ status: 1, date: -1 });
+journalEntrySchema.index({ 'lines.account': 1 });
+journalEntrySchema.index({ 'lines.account': 1, date: -1 });
+journalEntrySchema.index({ postedBy: 1 });
+journalEntrySchema.index({ reference: 1 });
+journalEntrySchema.index({ tags: 1 });
+
 // Generate entry number and hash
 journalEntrySchema.pre('save', async function(next) {
   if (this.isNew && !this.entryNumber) {

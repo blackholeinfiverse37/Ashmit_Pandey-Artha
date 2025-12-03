@@ -10,6 +10,7 @@ import {
 } from '../controllers/accounts.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, auditLogger } from '../middleware/security.js';
+import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.use(protect);
 // Routes
 router
   .route('/')
-  .get(getAccounts)
+  .get(cacheMiddleware(600), getAccounts)
   .post(
     authorize('admin', 'accountant'),
     accountValidation,
@@ -47,7 +48,7 @@ router
 
 router
   .route('/:id')
-  .get(getAccount)
+  .get(cacheMiddleware(1800), getAccount)
   .put(
     authorize('admin', 'accountant'),
     accountValidation,

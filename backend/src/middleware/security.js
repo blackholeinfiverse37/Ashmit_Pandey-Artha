@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 import AuditLog from '../models/AuditLog.js';
 import logger from '../config/logger.js';
+import { validateJWTConfig, validateRedisConfig } from '../config/validation.js';
 
 // Helmet configuration
 export const helmetConfig = helmet({
@@ -20,6 +21,16 @@ export const helmetConfig = helmet({
     preload: true,
   },
 });
+
+// Validate security configuration on load
+if (process.env.NODE_ENV === 'production') {
+  try {
+    validateJWTConfig();
+    validateRedisConfig();
+  } catch (error) {
+    logger.error('Security configuration validation failed:', error.message);
+  }
+}
 
 // Rate limiting
 export const limiter = rateLimit({

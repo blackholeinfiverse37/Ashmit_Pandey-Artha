@@ -2,9 +2,11 @@ import Navigation from './Navigation';
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       <Navigation />
-      <main>{children}</main>
+      <main className="relative">
+        {children}
+      </main>
     </div>
   );
 }

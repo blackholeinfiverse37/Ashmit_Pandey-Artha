@@ -5,6 +5,7 @@ import ChartOfAccounts from '../models/ChartOfAccounts.js';
 import AuditLog from '../models/AuditLog.js';
 import logger from '../config/logger.js';
 import mongoose from 'mongoose';
+import cacheService from './cache.service.js';
 
 class LedgerService {
   /**
@@ -165,6 +166,9 @@ class LedgerService {
       await this.updateAccountBalances(entry.lines, session);
 
       await session.commitTransaction();
+      
+      // Invalidate related caches
+      await cacheService.invalidateLedgerCaches();
       
       logger.info(`Journal entry posted: ${entry.entryNumber} by user ${userId}`);
 
@@ -425,6 +429,12 @@ class LedgerService {
    * Get ledger summary (total assets, liabilities, equity, income, expenses)
    */
   async getLedgerSummary() {
+    // Try to get from cache first
+    const cached = await cacheService.getCachedLedgerSummary();
+    if (cached) {
+      return cached;
+    }
+
     const balances = await this.getAccountBalances();
 
     const summary = {
@@ -466,7 +476,7 @@ class LedgerService {
     const rightSide = summary.liabilities.plus(summary.equity).plus(netIncome);
     const isBalanced = leftSide.equals(rightSide);
 
-    return {
+    const result = {
       assets: summary.assets.toString(),
       liabilities: summary.liabilities.toString(),
       equity: summary.equity.toString(),
@@ -476,6 +486,11 @@ class LedgerService {
       isBalanced,
       balanceDifference: leftSide.minus(rightSide).toString(),
     };
+
+    // Cache the result
+    await cacheService.cacheLedgerSummary(result);
+    
+    return result;
   }
 
   /**

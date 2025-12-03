@@ -1,5 +1,6 @@
 import ChartOfAccounts from '../models/ChartOfAccounts.js';
 import logger from '../config/logger.js';
+import cacheService from './cache.service.js';
 
 class ChartOfAccountsService {
   /**
@@ -71,6 +72,9 @@ class ChartOfAccountsService {
     });
 
     logger.info(`Chart of account created: ${code} - ${name}`);
+    
+    // Invalidate accounts cache
+    await cacheService.invalidateAccountsCaches();
 
     return account;
   }
@@ -99,6 +103,9 @@ class ChartOfAccountsService {
     await account.save();
 
     logger.info(`Chart of account updated: ${account.code}`);
+    
+    // Invalidate accounts cache
+    await cacheService.invalidateAccountsCaches();
 
     return account;
   }
@@ -117,6 +124,9 @@ class ChartOfAccountsService {
     await account.save();
 
     logger.info(`Chart of account deactivated: ${account.code}`);
+    
+    // Invalidate accounts cache
+    await cacheService.invalidateAccountsCaches();
 
     return account;
   }

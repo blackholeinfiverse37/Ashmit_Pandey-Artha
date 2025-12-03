@@ -96,9 +96,13 @@ const gstReturnSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Indexes
+// Additional indexes for performance
 gstReturnSchema.index({ returnType: 1, 'period.year': 1, 'period.month': 1 });
 gstReturnSchema.index({ gstin: 1 });
 gstReturnSchema.index({ status: 1 });
+gstReturnSchema.index({ filedDate: -1 });
+gstReturnSchema.index({ filedBy: 1 });
+gstReturnSchema.index({ gstin: 1, status: 1 });
+gstReturnSchema.index({ returnType: 1, status: 1 });
 
 export default mongoose.model('GSTReturn', gstReturnSchema);

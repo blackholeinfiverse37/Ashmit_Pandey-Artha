@@ -106,6 +106,18 @@ const expenseSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Additional indexes for performance
+expenseSchema.index({ expenseNumber: 1 }); // Already unique, but explicit
+expenseSchema.index({ status: 1 });
+expenseSchema.index({ date: -1 });
+expenseSchema.index({ status: 1, date: -1 });
+expenseSchema.index({ category: 1 });
+expenseSchema.index({ category: 1, date: -1 });
+expenseSchema.index({ submittedBy: 1 });
+expenseSchema.index({ approvedBy: 1 });
+expenseSchema.index({ vendor: 1 });
+expenseSchema.index({ account: 1 });
+
 // Auto-generate expense number
 expenseSchema.pre('save', async function(next) {
   if (this.isNew && !this.expenseNumber) {

@@ -28,7 +28,8 @@ const accountBalanceSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Index for faster lookups
-accountBalanceSchema.index({ account: 1 });
+// Additional indexes for performance
+accountBalanceSchema.index({ account: 1 }); // Already unique, but explicit
+accountBalanceSchema.index({ lastUpdated: -1 });
 
 export default mongoose.model('AccountBalance', accountBalanceSchema);

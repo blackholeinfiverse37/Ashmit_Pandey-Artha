@@ -196,6 +196,7 @@ const seedDatabase = async () => {
     // Create sample expense
     const officeSupplies = await ChartOfAccounts.findOne({ code: '6300' });
     const sampleExpense = await Expense.create({
+      expenseNumber: 'EXP-2025-001',
       date: new Date('2025-01-25'),
       category: 'supplies',
       vendor: 'Office Depot',

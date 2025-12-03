@@ -12,6 +12,7 @@ import {
 } from '../controllers/invoice.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, auditLogger } from '../middleware/security.js';
+import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -34,11 +35,11 @@ const paymentValidation = [
 router.use(protect);
 
 // Routes
-router.route('/stats').get(getInvoiceStats);
+router.route('/stats').get(cacheMiddleware(900), getInvoiceStats);
 
 router
   .route('/')
-  .get(getInvoices)
+  .get(cacheMiddleware(300), getInvoices)
   .post(
     authorize('accountant', 'admin'),
     invoiceValidation,
@@ -49,7 +50,7 @@ router
 
 router
   .route('/:id')
-  .get(getInvoice)
+  .get(cacheMiddleware(600), getInvoice)
   .put(
     authorize('accountant', 'admin'),
     validate,

@@ -60,9 +60,13 @@ const rlExperienceSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Indexes
+// Additional indexes for performance
 rlExperienceSchema.index({ sessionId: 1, createdAt: -1 });
 rlExperienceSchema.index({ userId: 1, createdAt: -1 });
 rlExperienceSchema.index({ 'metadata.timestamp': -1 });
+rlExperienceSchema.index({ action: 1 });
+rlExperienceSchema.index({ isTerminal: 1 });
+rlExperienceSchema.index({ 'metadata.userRole': 1 });
+rlExperienceSchema.index({ reward: -1 });
 
 export default mongoose.model('RLExperience', rlExperienceSchema);

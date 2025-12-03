@@ -143,10 +143,15 @@ tdsEntrySchema.pre('save', async function(next) {
   next();
 });
 
-// Indexes
-tdsEntrySchema.index({ entryNumber: 1 });
+// Additional indexes for performance
+tdsEntrySchema.index({ entryNumber: 1 }); // Already unique, but explicit
 tdsEntrySchema.index({ 'deductee.pan': 1 });
 tdsEntrySchema.index({ status: 1 });
 tdsEntrySchema.index({ quarter: 1, financialYear: 1 });
+tdsEntrySchema.index({ transactionDate: -1 });
+tdsEntrySchema.index({ section: 1 });
+tdsEntrySchema.index({ createdBy: 1 });
+tdsEntrySchema.index({ status: 1, transactionDate: -1 });
+tdsEntrySchema.index({ form26ASMatched: 1 });
 
 export default mongoose.model('TDSEntry', tdsEntrySchema);
