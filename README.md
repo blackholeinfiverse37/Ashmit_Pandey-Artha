@@ -10,6 +10,7 @@ A full-stack web application with Node.js backend and React frontend.
 - React frontend with modern UI
 - Docker containerization
 - MongoDB database
+- **Enhanced Hash-Chain Ledger** - Blockchain-inspired tamper-evident journal entries 🆕
 - File upload system for receipts
 - Expense management with approval workflow
 - Invoice management with payment tracking
@@ -124,6 +125,11 @@ The application will be available at:
 - `GET /api/v1/ledger/balances` - Get account balances
 - `GET /api/v1/ledger/summary` - Get ledger summary
 - `GET /api/v1/ledger/verify` - Verify ledger integrity (admin)
+- `GET /api/v1/ledger/entries/:id/verify-chain` - Verify chain from specific entry (admin) 🆕
+- `GET /api/v1/ledger/chain-stats` - Get hash-chain statistics (admin) 🆕
+- `GET /api/v1/ledger/verify-chain` - Verify entire ledger chain (admin) 🆕
+- `GET /api/v1/ledger/chain-segment` - Get chain segment for audit (admin) 🆕
+- `GET /api/v1/ledger/entries/:id/verify` - Verify single entry hash 🆕
 
 ### Legacy Ledger Routes (Backward Compatibility)
 - `GET /api/v1/ledger/journal-entries` - Get journal entries (legacy)
@@ -269,6 +275,7 @@ npm run verify:insightflow # Verify InsightFlow system
 # Configuration
 npm run generate:config           # Generate secure production config
 npm run create-indexes            # Create database indexes for optimization
+npm run migrate:hash-chain        # Migrate existing entries to enhanced hash-chain 🆕
 
 # Deployment
 ./scripts/deploy-prod.sh          # Deploy production environment

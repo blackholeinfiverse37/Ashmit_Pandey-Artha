@@ -8,6 +8,9 @@
     "start:prod": "node scripts/start-production.js",
     "test": "cross-env NODE_ENV=test jest --coverage",
     "test:ledger": "cross-env NODE_ENV=test jest tests/ledger.test.js",
+    "test:ledger-chain": "cross-env NODE_ENV=test jest tests/ledger-chain.test.js",
+    "test:ocr": "cross-env NODE_ENV=test jest tests/ocr.test.js",
+    "test:gst-filing": "cross-env NODE_ENV=test jest tests/gst-filing.test.js",
     "test:invoice": "cross-env NODE_ENV=test jest tests/invoice.test.js",
     "test:expense": "cross-env NODE_ENV=test jest tests/expense.routes.test.js",
     "test:upload": "cross-env NODE_ENV=test jest tests/upload.test.js",
@@ -48,6 +51,8 @@
     "verify:server": "node scripts/verify-server.js",
     "generate:config": "node scripts/generate-config.js",
     "create-indexes": "node scripts/create-indexes.js",
+    "migrate:hash-chain": "node scripts/migrate-hash-chain.js",
+    "verify:hash-chain": "node scripts/verify-hash-chain.js",
     "test:connections": "node test-connections.js",
     "test:redis": "node test-redis.js",
     "prepare": "husky install"
@@ -69,6 +74,9 @@
     "pdfkit": "^0.13.0",
     "redis": "^4.6.11",
     "winston": "^3.11.0"
+  },
+  "optionalDependencies": {
+    "tesseract.js": "^5.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",

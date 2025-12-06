@@ -82,7 +82,7 @@ class LedgerService {
   }
 
   /**
-   * Create a new journal entry (with transaction support)
+   * Create a new journal entry with hash-chain enforcement
    */
   async createJournalEntry(entryData, userId) {
     const session = await mongoose.startSession();
@@ -96,10 +96,26 @@ class LedgerService {
       this.validateDoubleEntry(lines);
       await this.validateAccounts(lines);
 
-      // Get previous hash for chain
-      const prevHash = await this.getPreviousHash();
+      // Get the latest entry to find prevHash and chainPosition
+      const lastEntry = await JournalEntry.findOne({ status: 'posted' })
+        .sort({ chainPosition: -1 })
+        .session(session);
 
-      // Create journal entry
+      const prevHash = lastEntry?.hash || lastEntry?.immutable_hash || '0';
+      const chainPosition = (lastEntry?.chainPosition ?? -1) + 1;
+
+      // Compute hash for new entry
+      const tempEntry = {
+        entryNumber: 'TEMP',
+        date: date || new Date(),
+        description,
+        lines,
+        reference,
+        status: 'draft',
+      };
+      const hash = JournalEntry.computeHash(tempEntry, prevHash);
+
+      // Create journal entry with hash-chain
       const journalEntry = new JournalEntry({
         date: date || new Date(),
         description,
@@ -107,8 +123,11 @@ class LedgerService {
         reference,
         tags,
         status: 'draft',
-        prev_hash: prevHash,
-        immutable_hash: '', // Will be calculated in pre-save hook
+        prevHash,
+        hash,
+        chainPosition,
+        prev_hash: prevHash, // Legacy field
+        immutable_hash: hash, // Legacy field
       });
 
       await journalEntry.save({ session });
@@ -116,7 +135,10 @@ class LedgerService {
       // Commit transaction
       await session.commitTransaction();
       
-      logger.info(`Journal entry created: ${journalEntry.entryNumber}`);
+      logger.info(`Journal entry created: ${journalEntry.entryNumber}`, {
+        hash: journalEntry.hash,
+        chainPosition: journalEntry.chainPosition,
+      });
 
       return journalEntry;
     } catch (error) {
@@ -129,7 +151,7 @@ class LedgerService {
   }
 
   /**
-   * Post a journal entry (make it permanent and update balances)
+   * Post a journal entry (move to posted state with chain finalization)
    */
   async postJournalEntry(entryId, userId) {
     const session = await mongoose.startSession();
@@ -139,7 +161,7 @@ class LedgerService {
       const entry = await JournalEntry.findById(entryId).session(session);
 
       if (!entry) {
-        throw new Error('Journal entry not found');
+        throw new Error('Entry not found');
       }
 
       if (entry.status === 'posted') {
@@ -150,6 +172,11 @@ class LedgerService {
         throw new Error('Cannot post a voided entry');
       }
 
+      // Verify hash before posting (tamper detection)
+      if (entry.verifyHash && !entry.verifyHash()) {
+        throw new Error('Entry hash verification failed - possible tampering');
+      }
+
       // Re-validate before posting
       this.validateLineIntegrity(entry.lines);
       this.validateDoubleEntry(entry.lines);
@@ -158,6 +185,18 @@ class LedgerService {
       entry.status = 'posted';
       entry.postedBy = userId;
       entry.postedAt = new Date();
+
+      // Add audit trail
+      if (!entry.auditTrail) entry.auditTrail = [];
+      entry.auditTrail.push({
+        action: 'POSTED',
+        performedBy: userId,
+        timestamp: new Date(),
+        details: { 
+          prevHash: entry.prevHash || entry.prev_hash, 
+          hash: entry.hash || entry.immutable_hash 
+        },
+      });
       
       // Hash will be recalculated in pre-save hook
       await entry.save({ session });
@@ -170,7 +209,11 @@ class LedgerService {
       // Invalidate related caches
       await cacheService.invalidateLedgerCaches();
       
-      logger.info(`Journal entry posted: ${entry.entryNumber} by user ${userId}`);
+      logger.info(`Journal entry posted: ${entry.entryNumber}`, {
+        hash: entry.hash,
+        chainPosition: entry.chainPosition,
+        postedBy: userId,
+      });
 
       return entry;
     } catch (error) {
@@ -305,47 +348,134 @@ class LedgerService {
   }
 
   /**
-   * Verify the integrity of the ledger chain
+   * Verify entire ledger chain (Enhanced with detailed reporting)
    */
   async verifyLedgerChain() {
-    const entries = await JournalEntry.find({ status: 'posted' }).sort({
-      createdAt: 1,
-    });
+    try {
+      const entries = await JournalEntry.find({ status: 'posted' })
+        .sort({ chainPosition: 1 })
+        .exec();
 
-    const errors = [];
-    let prevHash = '0';
-
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-
-      // Check if prev_hash matches
-      if (entry.prev_hash !== prevHash) {
-        errors.push({
-          entryNumber: entry.entryNumber,
-          error: 'Chain broken: prev_hash mismatch',
-          expected: prevHash,
-          actual: entry.prev_hash,
-        });
+      if (entries.length === 0) {
+        return {
+          isValid: true,
+          totalEntries: 0,
+          errors: [],
+          message: 'No entries to verify',
+        };
       }
 
-      // Recalculate hash and verify
-      const calculatedHash = entry.calculateHash();
-      if (entry.immutable_hash !== calculatedHash) {
-        errors.push({
-          entryNumber: entry.entryNumber,
-          error: 'Hash mismatch: entry may have been tampered with',
-          expected: calculatedHash,
-          actual: entry.immutable_hash,
-        });
+      const errors = [];
+      let expectedPrevHash = '0'; // Genesis hash
+
+      for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        const entryPrevHash = entry.prevHash || entry.prev_hash;
+        const entryHash = entry.hash || entry.immutable_hash;
+
+        // Check prevHash linkage
+        if (entryPrevHash !== expectedPrevHash) {
+          errors.push({
+            position: i,
+            entryNumber: entry.entryNumber,
+            issue: 'Chain linkage broken',
+            expectedPrevHash,
+            actualPrevHash: entryPrevHash,
+          });
+        }
+
+        // Verify entry hash
+        if (entry.verifyHash && !entry.verifyHash()) {
+          errors.push({
+            position: i,
+            entryNumber: entry.entryNumber,
+            issue: 'Hash mismatch (possible tampering)',
+            expectedHash: JournalEntry.computeHash(entry.toObject(), entryPrevHash),
+            actualHash: entryHash,
+          });
+        }
+
+        // Update expected prevHash for next iteration
+        expectedPrevHash = entryHash;
       }
 
-      prevHash = entry.immutable_hash;
+      const isValid = errors.length === 0;
+
+      logger.info(`Ledger chain verification: ${isValid ? 'VALID' : 'INVALID'}`, {
+        totalEntries: entries.length,
+        errorCount: errors.length,
+      });
+
+      return {
+        isValid,
+        totalEntries: entries.length,
+        errors,
+        lastHash: entries[entries.length - 1]?.hash || entries[entries.length - 1]?.immutable_hash,
+        chainLength: entries.length,
+        message: isValid
+          ? 'Ledger chain is valid and tamper-proof'
+          : `Ledger integrity issues detected at ${errors.length} point(s)`,
+      };
+    } catch (error) {
+      logger.error('Verify ledger chain error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify chain from specific entry (Enhanced)
+   */
+  async verifyChainFromEntry(entryId) {
+    const entry = await JournalEntry.findById(entryId);
+    
+    if (!entry) {
+      throw new Error('Journal entry not found');
     }
 
+    if (entry.verifyChainFromEntry) {
+      return await entry.verifyChainFromEntry();
+    }
+
+    // Fallback to basic verification
     return {
-      isValid: errors.length === 0,
-      totalEntries: entries.length,
-      errors,
+      isValid: entry.verifyHash ? entry.verifyHash() : true,
+      totalEntriesVerified: 1,
+      errors: [],
+    };
+  }
+
+  /**
+   * Get chain statistics
+   */
+  async getChainStatistics() {
+    const stats = await JournalEntry.aggregate([
+      {
+        $match: { status: 'posted' }
+      },
+      {
+        $group: {
+          _id: null,
+          totalEntries: { $sum: 1 },
+          maxPosition: { $max: '$chainPosition' },
+          minPosition: { $min: '$chainPosition' },
+          oldestEntry: { $min: '$createdAt' },
+          newestEntry: { $max: '$createdAt' },
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      totalEntries: 0,
+      maxPosition: 0,
+      minPosition: 0,
+    };
+
+    return {
+      totalPostedEntries: result.totalEntries,
+      chainLength: result.maxPosition + 1,
+      oldestEntry: result.oldestEntry,
+      newestEntry: result.newestEntry,
+      hasGaps: result.maxPosition !== result.totalEntries - 1,
     };
   }
 
@@ -494,7 +624,7 @@ class LedgerService {
   }
 
   /**
-   * Void a journal entry (creates reversing entry)
+   * Void a journal entry (mark as voided in chain)
    */
   async voidJournalEntry(entryId, userId, reason) {
     const session = await mongoose.startSession();
@@ -504,19 +634,31 @@ class LedgerService {
       const entry = await JournalEntry.findById(entryId).session(session);
 
       if (!entry) {
-        throw new Error('Journal entry not found');
-      }
-
-      if (entry.status !== 'posted') {
-        throw new Error('Only posted entries can be voided');
+        throw new Error('Entry not found');
       }
 
       if (entry.status === 'voided') {
         throw new Error('Entry is already voided');
       }
 
-      // Mark original entry as voided
+      if (entry.status !== 'posted') {
+        throw new Error('Only posted entries can be voided');
+      }
+
+      // Create void audit trail but keep chain intact
       entry.status = 'voided';
+      entry.voidedBy = userId;
+      entry.voidReason = reason;
+
+      // Add audit trail
+      if (!entry.auditTrail) entry.auditTrail = [];
+      entry.auditTrail.push({
+        action: 'VOIDED',
+        performedBy: userId,
+        timestamp: new Date(),
+        details: { reason, originalHash: entry.hash || entry.immutable_hash },
+      });
+
       await entry.save({ session });
 
       // Create reversing entry
@@ -546,7 +688,11 @@ class LedgerService {
 
       await session.commitTransaction();
 
-      logger.info(`Journal entry voided: ${entry.entryNumber} by user ${userId}`);
+      logger.info(`Journal entry voided: ${entry.entryNumber}`, {
+        reason,
+        hash: entry.hash,
+        voidedBy: userId,
+      });
 
       return { voidedEntry: entry, reversingEntry };
     } catch (error) {
@@ -555,6 +701,50 @@ class LedgerService {
       throw error;
     } finally {
       session.endSession();
+    }
+  }
+
+  /**
+   * Reverse account balances (for voiding)
+   */
+  async reverseAccountBalances(entry) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const reversingLines = entry.lines.map(line => ({
+        account: line.account,
+        debit: line.credit,
+        credit: line.debit,
+      }));
+
+      await this.updateAccountBalances(reversingLines, session);
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  /**
+   * Get entry chain segment (for audit)
+   */
+  async getChainSegment(startPosition, endPosition) {
+    try {
+      const entries = await JournalEntry.find({
+        chainPosition: { $gte: startPosition, $lte: endPosition },
+        status: 'posted',
+      })
+        .sort({ chainPosition: 1 })
+        .select('entryNumber chainPosition hash prevHash date description status')
+        .exec();
+
+      return entries;
+    } catch (error) {
+      logger.error('Get chain segment error:', error);
+      throw error;
     }
   }
 }

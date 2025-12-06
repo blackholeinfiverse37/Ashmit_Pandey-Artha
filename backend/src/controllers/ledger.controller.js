@@ -1,4 +1,5 @@
 import ledgerService from '../services/ledger.service.js';
+import JournalEntry from '../models/JournalEntry.js';
 import logger from '../config/logger.js';
 
 // @desc    Create journal entry
@@ -192,3 +193,150 @@ export const verifyChain = async (req, res) => {
     });
   }
 };
+
+// @desc    Verify chain from specific entry
+// @route   GET /api/v1/ledger/entries/:id/verify-chain
+// @access  Private (admin)
+export const verifyChainFromEntry = async (req, res) => {
+  try {
+    const result = await ledgerService.verifyChainFromEntry(req.params.id);
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    logger.error('Verify chain from entry error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get chain statistics
+// @route   GET /api/v1/ledger/chain-stats
+// @access  Private (admin)
+export const getChainStats = async (req, res) => {
+  try {
+    const stats = await ledgerService.getChainStatistics();
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    logger.error('Get chain stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Verify entire ledger chain (Enhanced)
+// @route   GET /api/v1/ledger/verify-chain
+// @access  Private (admin)
+export const verifyLedgerChain = async (req, res) => {
+  try {
+    const result = await ledgerService.verifyLedgerChain();
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    logger.error('Verify chain error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get chain segment for audit
+// @route   GET /api/v1/ledger/chain-segment
+// @access  Private (admin)
+export const getChainSegment = async (req, res) => {
+  try {
+    const { startPosition = 0, endPosition = 100 } = req.query;
+
+    if (isNaN(startPosition) || isNaN(endPosition)) {
+      return res.status(400).json({
+        success: false,
+        message: 'startPosition and endPosition must be numbers',
+      });
+    }
+
+    const segment = await ledgerService.getChainSegment(
+      parseInt(startPosition),
+      parseInt(endPosition)
+    );
+
+    res.json({
+      success: true,
+      data: {
+        segment,
+        range: { 
+          startPosition: parseInt(startPosition), 
+          endPosition: parseInt(endPosition) 
+        },
+        count: segment.length,
+      },
+    });
+  } catch (error) {
+    logger.error('Get chain segment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Verify single entry hash
+// @route   GET /api/v1/ledger/entries/:id/verify
+// @access  Private
+export const verifySingleEntry = async (req, res) => {
+  try {
+    const entry = await JournalEntry.findById(req.params.id);
+
+    if (!entry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Entry not found',
+      });
+    }
+
+    const isValid = entry.verifyHash ? entry.verifyHash() : true;
+    const computedHash = JournalEntry.computeHash(
+      entry.toObject(), 
+      entry.prevHash || entry.prev_hash || '0'
+    );
+
+    res.json({
+      success: true,
+      data: {
+        entryNumber: entry.entryNumber,
+        hash: entry.hash || entry.immutable_hash,
+        computedHash,
+        isValid,
+        chainPosition: entry.chainPosition,
+        prevHash: entry.prevHash || entry.prev_hash,
+        status: entry.status,
+        message: isValid 
+          ? 'Entry hash is valid' 
+          : 'Entry hash is invalid - possible tampering',
+      },
+    });
+  } catch (error) {
+    logger.error('Verify entry error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Legacy alias for backward compatibility
+export const createJournalEntry = createEntry;
+export const postJournalEntry = postEntry;

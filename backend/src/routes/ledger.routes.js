@@ -9,6 +9,13 @@ import {
   getBalances,
   getSummary,
   verifyChain,
+  verifyChainFromEntry,
+  getChainStats,
+  verifyLedgerChain,
+  getChainSegment,
+  verifySingleEntry,
+  createJournalEntry,
+  postJournalEntry,
 } from '../controllers/ledger.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, auditLogger } from '../middleware/security.js';
@@ -71,6 +78,13 @@ router.route('/balances').get(cacheMiddleware(600), getBalances);
 router.route('/summary').get(cacheMiddleware(300), getSummary);
 
 router.route('/verify').get(authorize('admin'), verifyChain);
+
+// Enhanced hash-chain endpoints
+router.route('/entries/:id/verify-chain').get(authorize('admin'), verifyChainFromEntry);
+router.route('/chain-stats').get(authorize('admin'), cacheMiddleware(300), getChainStats);
+router.route('/verify-chain').get(authorize('admin'), verifyLedgerChain);
+router.route('/chain-segment').get(authorize('admin'), getChainSegment);
+router.route('/entries/:id/verify').get(verifySingleEntry);
 
 // Legacy routes for backward compatibility
 router.get('/journal-entries', getEntries);

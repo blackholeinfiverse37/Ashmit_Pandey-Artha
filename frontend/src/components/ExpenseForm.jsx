@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { expenseService } from '../services/invoiceService';
+import OCRReceipt from './OCRReceipt';
 
 export default function ExpenseForm({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function ExpenseForm({ onClose, onSuccess }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showOCR, setShowOCR] = useState(false);
 
   const categories = [
     'travel', 'meals', 'supplies', 'utilities', 'rent', 'insurance',
@@ -24,6 +26,18 @@ export default function ExpenseForm({ onClose, onSuccess }) {
   const paymentMethods = [
     'cash', 'credit_card', 'debit_card', 'check', 'bank_transfer', 'other'
   ];
+
+  const handleExtractedData = (ocrData) => {
+    setFormData(prev => ({
+      ...prev,
+      vendor: ocrData.vendor || prev.vendor,
+      date: ocrData.date || prev.date,
+      amount: ocrData.amount || prev.amount,
+      totalAmount: ocrData.amount || prev.totalAmount,
+      description: ocrData.description || prev.description,
+    }));
+    setShowOCR(false);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,6 +87,23 @@ export default function ExpenseForm({ onClose, onSuccess }) {
           {error && (
             <div className="mb-4 p-4 bg-red-50 text-red-800 rounded-md">{error}</div>
           )}
+
+          {/* OCR Section */}
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => setShowOCR(!showOCR)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+            >
+              {showOCR ? '✕ Hide OCR' : '📸 Scan Receipt'}
+            </button>
+
+            {showOCR && (
+              <div className="mt-4">
+                <OCRReceipt onExtractedData={handleExtractedData} />
+              </div>
+            )}
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

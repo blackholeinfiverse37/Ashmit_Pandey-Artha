@@ -6,6 +6,12 @@ import {
   fileGSTReturn,
   validateGSTIN,
 } from '../controllers/gst.controller.js';
+import {
+  getGSTSummary,
+  getGSTR1FilingPacket,
+  getGSTR3BFilingPacket,
+  exportFilingPacket,
+} from '../controllers/gstFiling.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { auditLogger } from '../middleware/security.js';
 
@@ -36,5 +42,26 @@ router.route('/returns/:id/file').post(
 );
 
 router.route('/validate-gstin').post(validateGSTIN);
+
+// GST Filing routes
+router.route('/summary').get(
+  authorize('accountant', 'admin'),
+  getGSTSummary
+);
+
+router.route('/filing-packet/gstr-1').get(
+  authorize('accountant', 'admin'),
+  getGSTR1FilingPacket
+);
+
+router.route('/filing-packet/gstr-3b').get(
+  authorize('accountant', 'admin'),
+  getGSTR3BFilingPacket
+);
+
+router.route('/filing-packet/export').get(
+  authorize('accountant', 'admin'),
+  exportFilingPacket
+);
 
 export default router;

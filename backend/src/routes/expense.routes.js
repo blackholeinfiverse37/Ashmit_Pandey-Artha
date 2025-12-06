@@ -11,6 +11,7 @@ import {
   deleteReceipt,
   getExpenseStats,
 } from '../controllers/expense.controller.js';
+import { processReceiptOCR, getOCRStatus } from '../controllers/ocr.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, auditLogger } from '../middleware/security.js';
 import { uploadReceipts, handleUploadError } from '../middleware/upload.js';
@@ -45,6 +46,16 @@ const expenseValidation = [
 
 // All routes require authentication
 router.use(protect);
+
+// OCR Routes
+router.route('/ocr/status').get(getOCRStatus);
+router
+  .route('/ocr')
+  .post(
+    uploadReceipts.single('receipt'),
+    handleUploadError,
+    processReceiptOCR
+  );
 
 // Routes
 router.route('/stats').get(cacheMiddleware(900), getExpenseStats);
